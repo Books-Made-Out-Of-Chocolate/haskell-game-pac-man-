@@ -6,7 +6,14 @@ import Data.Set
 import Data.Array
 import System.Random
 
+--model of program
+data Model = Model 
+  {
+    gState :: GameState,
+    inputs :: InputControls
+  }
 
+--game data structs
 type Cell     = (Int, Int)      -- Grid coordinates
 type WorldPos = (Float, Float)  -- World (screen) coordinates
 
@@ -28,8 +35,7 @@ data Pellets = Pellets          --Pellets locations
 data Direction = U | D | L | R | None 
   deriving (Eq, Show)
 
-newtype Speed = Speed Float 
-  deriving (Eq, Show)
+type Speed = Float
 
 --actors
 data Pacman = Pacman
@@ -65,34 +71,49 @@ data UIState = UIState
 --The World state
 data GameState = GameState
   { 
-  maze        :: Maze,
-  pellets     :: Pellets,
-  pacman      :: Pacman,
-  ghosts      :: [Ghost],
-  score       :: Int,
-  lives       :: Int,
-  level       :: Int,
-  paused      :: Bool,
-  random      :: StdGen, -- Standard random number generator
-  ui          :: UIState,
-  elapsedTime :: Float
+    maze        :: Maze,
+    pellets     :: Pellets,
+    pacman      :: Pacman,
+    ghosts      :: [Ghost],
+    score       :: Int,
+    lives       :: Int,
+    level       :: Int,
+    paused      :: Bool,
+    random      :: StdGen, -- Standard random number generator
+    ui          :: UIState,
+    elapsedTime :: Float
   }
  deriving (Eq, Show)
 
+initialModel :: Model
+initialModel = Model 
+                (GameState
+                      (array ((1, 2), (1, 3)) [((1, 2), Wall)]) 
+                      (Pellets (Data.Set.fromList [(1,1),(1,2)]) Data.Set.empty)
+                      (Pacman (1.2, 1.2) U 3.2 D)
+                      [Ghost (1.2, 1.2) U Chase 3.2, Ghost (1.2, 1.2) U Chase 3.2]
+                      10
+                      12
+                      54
+                      False
+                      (mkStdGen 6)
+                      (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
+                      0
+                )
+                (InputControls [False] ['D', 'P'])
+                    
+--end game data structs
 
-nO_SECS_BETWEEN_CYCLES :: Float
-nO_SECS_BETWEEN_CYCLES = 5
+--input structs
+type PressedControls = [Bool]
+type CharsHighScoreInput = [Char]
 
-initialState :: GameState
-initialState = GameState 
-  (array ((1, 2), (1, 3)) [((1, 2), Wall)]) 
-  (Pellets (Data.Set.fromList [(1,1),(1,2)]) Data.Set.empty)
-  (Pacman (1.2, 1.2) U (Speed 3.2) D)
-  [Ghost (1.2, 1.2) U Chase (Speed 3.2), Ghost (1.2, 1.2) U Chase (Speed 3.2)]
-  10
-  12
-  54
-  False
-  (mkStdGen 6)
-  (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
-  0
+data InputControls = InputControls 
+  {
+    keys  :: PressedControls,
+    chars :: CharsHighScoreInput
+  }
+
+--random shit
+amountSecondsBetweenStep :: Float
+amountSecondsBetweenStep = 5

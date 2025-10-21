@@ -5,8 +5,8 @@ module View where
 import Graphics.Gloss
 import Model
 
-view :: GameState -> IO Picture
+view :: Model -> IO Picture
 view = return . viewPure
 
-viewPure :: GameState -> Picture
-viewPure gstate = color green (text (show (score gstate)))
+viewPure :: Model -> Picture
+viewPure (Model gstate input) = color green (text (show (head (chars input))))
