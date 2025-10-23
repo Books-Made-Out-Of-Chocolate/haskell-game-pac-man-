@@ -13,6 +13,7 @@ data Model = Model
     inputs :: InputControls
   }
 
+
 --game data structs
 type Cell     = (Int, Int)      -- Grid coordinates
 type WorldPos = (Float, Float)  -- World (screen) coordinates
@@ -41,6 +42,7 @@ type Speed = Float
 data Pacman = Pacman
   { 
     pPos   :: WorldPos,
+    pCell  :: Cell,
     pDir   :: Direction,
     pSpeed :: Speed,
     pNext  :: Direction
@@ -53,11 +55,13 @@ data GhostMode = Chase | Frightened
 data Ghost = Ghost
   { 
     gPos   :: WorldPos,
+    gCell  :: Cell,
     gDir   :: Direction,
     gMode  :: GhostMode,
     gSpeed :: Speed
   } 
   deriving (Eq, Show)
+
 
 --UIstate
 data UIState = UIState
@@ -83,15 +87,45 @@ data GameState = GameState
     ui          :: UIState,
     elapsedTime :: Float
   }
- deriving (Eq, Show)
+ deriving (Eq, Show)                    
+--end game data structs
+
+--input structs
+data PressedControls = PressedControls
+  {
+    pause :: Bool,
+    reset :: Bool,
+    enter :: Bool
+  }
+ deriving (Eq, Show)  
+
+data CharsHighScoreInput = CharsHighScoreInput
+  {
+    char1 :: Char,
+    char2 :: Char,
+    char3 :: Char,
+    char4 :: Char
+  }
+ deriving (Eq, Show)  
+
+data InputControls = InputControls 
+  {
+    keys  :: PressedControls,
+    chars :: CharsHighScoreInput
+  }
+ deriving (Eq, Show)   
+
+--random shit
+amountSecondsBetweenStep :: Float
+amountSecondsBetweenStep = 5
 
 initialModel :: Model
 initialModel = Model 
                 (GameState
-                      (array ((1, 2), (1, 3)) [((1, 2), Wall)]) 
+                      (array ((1, 2), (1, 6)) [((1, 2), Empty), ((1, 3), Empty), ((1, 4), Empty), ((1, 5), Wall)]) 
                       (Pellets (Data.Set.fromList [(1,1),(1,2)]) Data.Set.empty)
-                      (Pacman (1.2, 1.2) U 3.2 D)
-                      [Ghost (1.2, 1.2) U Chase 3.2, Ghost (1.2, 1.2) U Chase 3.2]
+                      (Pacman (1.2, 1.2) (1, 2) U 3.2 U)
+                      [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
                       54
@@ -100,20 +134,7 @@ initialModel = Model
                       (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
                       0
                 )
-                (InputControls [False] ['D', 'P'])
-                    
---end game data structs
-
---input structs
-type PressedControls = [Bool]
-type CharsHighScoreInput = [Char]
-
-data InputControls = InputControls 
-  {
-    keys  :: PressedControls,
-    chars :: CharsHighScoreInput
-  }
-
---random shit
-amountSecondsBetweenStep :: Float
-amountSecondsBetweenStep = 5
+                (InputControls 
+                        (PressedControls False False False False False False False)
+                        (CharsHighScoreInput ' ' ' ' ' ' ' ')
+                )
