@@ -2,12 +2,12 @@
 --   which represent the state of the game
 module Model where
 
-import Data.Set
+import Data.Set as S
 import Data.Array
 import System.Random
 
 --model of program
-data Model = Model 
+data Model = Model
   {
     gState :: GameState,
     inputs :: InputControls
@@ -25,15 +25,15 @@ type Maze = Array Cell Tile     --Maze as array of tiles
 
 
 data Pellets = Pellets          --Pellets locations
-  { 
+  {
     dots      :: Set Cell,
     powerDots :: Set Cell
-  } 
+  }
   deriving (Eq, Show)
 
 
 --Movement primitives
-data Direction = U | D | L | R | None 
+data Direction = U | D | L | R | None
   deriving (Eq, Show)
 
 type Speed = Float
@@ -122,8 +122,8 @@ amountSecondsBetweenStep = 5
 initialModel :: Model
 initialModel = Model 
                 (GameState
-                      (array ((1, 2), (1, 6)) [((1, 2), Empty), ((1, 3), Empty), ((1, 4), Empty), ((1, 5), Wall)]) 
-                      (Pellets (Data.Set.fromList [(1,1),(1,2)]) Data.Set.empty)
+                      emptyMazeWithBorder
+                      (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
                       (Pacman (1.2, 1.2) (1, 2) U 3.2 U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
@@ -135,6 +135,36 @@ initialModel = Model
                       0
                 )
                 (InputControls 
-                        (PressedControls False False False False False False False)
+                        (PressedControls False False False)
                         (CharsHighScoreInput ' ' ' ' ' ' ' ')
                 )
+
+--end game data structs
+
+
+-- maze constamts
+-- === Maze-constanten ===
+gridMinX, gridMaxX, gridMinY, gridMaxY :: Int
+gridMinX = 0; gridMaxX = 27
+gridMinY = 0; gridMaxY = 35
+
+gridBounds :: (Cell, Cell)
+gridBounds = ((gridMinX, gridMinY), (gridMaxX, gridMaxY))
+
+
+emptyMazeWithBorder :: Maze
+emptyMazeWithBorder =
+  let cells = [ (x,y) | y <- [gridMinY..gridMaxY], x <- [gridMinX..gridMaxX] ]
+      isBorder (x,y) =
+        x == gridMinX || x == gridMaxX || y == gridMinY || y == gridMaxY
+
+      innerWalls =
+        S.fromList ([(x,10) | x <- [3..24]] ++
+                    [(x,20) | x <- [3..24]] ++
+                    [(8,y)  | y <- [12..18]] ++
+                    [(19,y) | y <- [12..18]])
+      tileAt c
+        | isBorder c           = Wall
+        | c `S.member` innerWalls = Wall
+        | otherwise            = Empty
+  in Data.Array.array gridBounds [ (c, tileAt c) | c <- cells ]
