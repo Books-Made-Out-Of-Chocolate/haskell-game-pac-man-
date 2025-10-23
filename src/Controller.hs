@@ -15,7 +15,7 @@ step :: Float -> Model -> IO Model
 step secs (Model gState input)
   | elapsedTime gState + secs > amountSecondsBetweenStep
   = -- We show a new random number
-    do return 
+    do return
 
         (Model gState {elapsedTime = 0, pacman = advancePacman (maze gState) (pacman gState)} (processInputKeys input))
   | otherwise
@@ -24,15 +24,25 @@ step secs (Model gState input)
 
 
 advancePacman ::  Maze -> Pacman -> Pacman
-advancePacman maze pacman = 
-        if (maze ! newCell) == Wall then pacman else pacman {pCell = newCell}
-          where
-            newCell = nextCell (pCell pacman) (pNext pacman)
+advancePacman maze pacman =
+      let pos = pCell pacman
+          wantDir = pNext pacman
+          curDir = pDir pacman
+          passable cell = (maze ! cell) /= Wall
+          step = nextCell pos
+          canTurn = passable (step wantDir)
+          canMove = passable (step curDir)
+          dir = if canTurn then wantDir else curDir
+          nextPos = nextCell pos dir
+      in if canTurn || canMove
+       then pacman { pCell = nextPos, pDir = dir }
+       else pacman
+
 --ghostStep :: Maze -> StdGen -> Pacman -> Ghost -> (Ghost, StdGen)
 
 nextCell :: Cell -> Direction -> Cell
-nextCell (x, y) U = (x, y + 1)
-nextCell (x, y) D = (x, y - 1)
+nextCell (x, y) U = (x, y - 1)
+nextCell (x, y) D = (x, y + 1)
 nextCell (x, y) L = (x - 1, y)
 nextCell (x, y) R = (x + 1, y)
 
@@ -50,35 +60,35 @@ input e model = return (inputKey e model)
 
 inputKey :: Event -> Model -> Model
 --up arrow key pressed
-inputKey (EventKey (SpecialKey KeyUp) Down _ _)  (Model gState inputs) = 
+inputKey (EventKey (SpecialKey KeyUp) Down _ _)  (Model gState inputs) =
             Model gState {pacman = (pacman gState) {pNext = U}}
                   inputs
 --down arrow key pressed
-inputKey (EventKey (SpecialKey KeyDown) Down _ _)  (Model gState inputs) = 
+inputKey (EventKey (SpecialKey KeyDown) Down _ _)  (Model gState inputs) =
             Model gState {pacman = (pacman gState) {pNext = D}}
                   inputs
 --left arrow key pressed
-inputKey (EventKey (SpecialKey KeyLeft) Down _ _)  (Model gState inputs) = 
+inputKey (EventKey (SpecialKey KeyLeft) Down _ _)  (Model gState inputs) =
             Model gState {pacman = (pacman gState) {pNext = L}}
                   inputs
 --right arrow key pressed
-inputKey (EventKey (SpecialKey KeyRight) Down _ _)  (Model gState inputs) = 
+inputKey (EventKey (SpecialKey KeyRight) Down _ _)  (Model gState inputs) =
             Model gState {pacman = (pacman gState) {pNext = R}}
                   inputs
 --escape key pressed
-inputKey (EventKey (SpecialKey KeyEsc) Down _ _)  (Model gState (InputControls keys chars)) = 
+inputKey (EventKey (SpecialKey KeyEsc) Down _ _)  (Model gState (InputControls keys chars)) =
             Model gState
                   (InputControls (keys {pause = True}) chars)
 --home key pressed
-inputKey (EventKey (SpecialKey KeyHome) Down _ _)  (Model gState (InputControls keys chars)) = 
+inputKey (EventKey (SpecialKey KeyHome) Down _ _)  (Model gState (InputControls keys chars)) =
             Model gState
                   (InputControls (keys {reset = True}) chars)
 --enter key pressed
-inputKey (EventKey (SpecialKey KeyEnter) Down _ _)  (Model gState (InputControls keys chars)) = 
+inputKey (EventKey (SpecialKey KeyEnter) Down _ _)  (Model gState (InputControls keys chars)) =
             Model gState
                   (InputControls (keys {enter = True}) chars)
 --backspace key pressed, immediately remove a char from CharsHighScoreInput
-inputKey (EventKey (Char '\b') Down _ _)  (Model gState (InputControls keys chars)) = 
+inputKey (EventKey (Char '\b') Down _ _)  (Model gState (InputControls keys chars)) =
             Model gState
                   (InputControls keys (removeCharInOrder chars))
 --highscore name input

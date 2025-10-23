@@ -26,16 +26,31 @@ drawTile ((x,y), t) =
   case t of
     Wall ->
       let (cx, cy) = cellCenter (x,y)
-      in translate cx cy $ color (makeColorI 33 33 255 255) (rectangleSolid tileSize tileSize)
+      in translate cx cy $ color (makeColorI 33 33 255 255) (rectangleSolid (tileSize-2) (tileSize-2))
+    Pellet ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 255 255 255) (circleSolid 1)
+    PowerPellet ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 255 0 255) (circleSolid 2)
+    Gate ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 0 255 255) (rectangleSolid tileSize (tileSize / 4))
     _    -> Blank
 
 drawMaze :: Maze -> Picture
 drawMaze mz = Pictures ( map drawTile (Data.Array.assocs mz))
 
+drawPacman :: Pacman -> Picture
+drawPacman pac =
+  let (cx, cy) = cellCenter (pCell pac)
+  in translate cx cy $ color yellow (circleSolid (tileSize / 2))
+
 scene :: GameState -> Picture
 scene gs = Pictures
   [ color black (rectangleSolid screenW screenH)
   , drawMaze (maze gs)
+  , drawPacman (pacman gs)
   ]
 
 view :: Model -> IO Picture
