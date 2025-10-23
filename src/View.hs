@@ -4,21 +4,22 @@ module View where
 
 import Graphics.Gloss
 import Model
+import Data.Set
 import qualified Data.Array
 
 
 -- Screen and tile parameters
-screenW, screenH, tileSize :: Float
-screenW = 224
-screenH = 288
-tileSize = 8
+screenX, screenY, tileSize, offsetX, offsetY :: Float
+screenX = fromIntegral (gridMaxX + 1) * tileSize
+screenY = fromIntegral (gridMaxY + 1) * tileSize
+tileSize = 10
+offsetX = -(screenX / 2) + tileSize / 2
+offsetY =   screenY / 2  - tileSize / 2
 
 cellCenter :: Cell -> WorldPos
-cellCenter (x, y) =
-  let halfW = screenW  / 2
-      halfH = screenH  / 2
-  in (-halfW + 4 + fromIntegral x * tileSize,
-       halfH - 4 - fromIntegral y * tileSize)
+cellCenter (x, y) = 
+      (offsetX + fromIntegral x * tileSize,
+       offsetY - fromIntegral y * tileSize)
 
 -- Just walls for now
 drawTile :: ( (Int,Int), Tile ) -> Picture
@@ -39,7 +40,22 @@ drawTile ((x,y), t) =
     _    -> Blank
 
 drawMaze :: Maze -> Picture
-drawMaze mz = Pictures ( map drawTile (Data.Array.assocs mz))
+drawMaze mz = Pictures (Prelude.map drawTile (Data.Array.assocs mz))
+
+drawDot :: Cell -> Picture
+drawDot cell = let (cx, cy) = cellCenter cell
+                  in translate cx cy $ color (makeColorI 0 255 0 255) (Circle 3)
+
+drawPowerDots :: Cell -> Picture
+drawPowerDots cell = let (cx, cy) = cellCenter cell
+                  in translate cx cy $ color (makeColorI 65 100 0 255) (Circle 5)
+
+drawPellets :: Pellets -> Picture
+drawPellets pellets = Pictures (Prelude.map drawDot (toList (dots pellets)) ++ Prelude.map drawPowerDots (toList (powerDots pellets)))
+
+drawPlayer :: Pacman -> Picture
+drawPlayer pacman = let (cx, cy) = cellCenter (pCell pacman)
+                    in translate cx cy $ color (makeColorI 255 255 0 225) (ThickCircle 6 5)
 
 drawPacman :: Pacman -> Picture
 drawPacman pac =
@@ -48,7 +64,7 @@ drawPacman pac =
 
 scene :: GameState -> Picture
 scene gs = Pictures
-  [ color black (rectangleSolid screenW screenH)
+  [ color black (rectangleSolid screenX screenY)
   , drawMaze (maze gs)
   , drawPacman (pacman gs)
   ]
