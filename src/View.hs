@@ -37,7 +37,16 @@ drawTile ((x,y), t) =
   case t of
     Wall ->
       let (cx, cy) = cellCenter (x,y)
-      in translate cx cy $ color (makeColorI 33 33 255 255) (rectangleSolid tileSize tileSize)
+      in translate cx cy $ color (makeColorI 33 33 255 255) (rectangleSolid (tileSize-2) (tileSize-2))
+    Pellet ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 255 255 255) (circleSolid 1)
+    PowerPellet ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 255 0 255) (circleSolid 2)
+    Gate ->
+      let (cx, cy) = cellCenter (x,y)
+      in translate cx cy $ color (makeColorI 255 0 255 255) (rectangleSolid tileSize (tileSize / 4))
     _    -> Blank
 
 drawMaze :: Maze -> Picture
@@ -57,6 +66,11 @@ drawPellets pellets = Pictures (Prelude.map drawDot (toList (dots pellets)) ++ P
 drawPlayer :: Pacman -> Picture
 drawPlayer pacman = let (cx, cy) = worldPosToScreenPos (pPos pacman)
                     in translate cx cy $ color (makeColorI 255 255 0 225) (ThickCircle 6 5)
+
+drawPacman :: Pacman -> Picture
+drawPacman pac =
+  let (cx, cy) = cellCenter (pCell pac)
+  in translate cx cy $ color yellow (circleSolid (tileSize / 2))
 
 scene :: GameState -> Picture
 scene gs = Pictures

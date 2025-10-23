@@ -5,6 +5,7 @@ module Model where
 import Data.Set as S
 import Data.Array
 import System.Random
+import Text.ParserCombinators.ReadP (char)
 
 --model of program
 data Model = Model
@@ -18,7 +19,7 @@ data Model = Model
 type Cell     = (Int, Int)      -- Grid coordinates
 type WorldPos = (Float, Float)  -- World (screen) coordinates
 
-data Tile = Wall | Empty | Gate --Tiles options
+data Tile = Wall | Empty | Gate | Pellet | PowerPellet --Tiles options
   deriving (Eq, Show)
 
 type Maze = Array Cell Tile     --Maze as array of tiles
@@ -117,14 +118,16 @@ data InputControls = InputControls
 
 --random shit
 amountSecondsBetweenStep :: Float
-amountSecondsBetweenStep = 1
+amountSecondsBetweenStep = 0.1
 
-initialModel :: Model
-initialModel = Model 
-                (GameState
-                      emptyMazeWithBorder
-                      (Pellets (S.fromList [(1,1),(1,2),(6,2)]) (S.fromList [(9, 2), (21, 4)]))
-                      (Pacman (200, 10) (20, 1) U 2.5 U)
+initialModel :: IO Model
+initialModel = do
+  maze <- loadMazeFromFile "src/levels/maze2.txt"
+  return $ Model
+            (GameState
+                  maze
+                  (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
+                  (Pacman (1.2, 1.2) (10,20) U 100 U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
@@ -134,9 +137,9 @@ initialModel = Model
                       (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
                       0
                 )
-                (InputControls 
-                      (PressedControls False False False)
-                      (CharsHighScoreInput ' ' ' ' ' ' ' ')
+                (InputControls
+                        (PressedControls False False False)
+                        (CharsHighScoreInput ' ' ' ' ' ' ' ')
                 )
 
 --end game data structs
@@ -151,20 +154,26 @@ gridMinY = 0; gridMaxY = 35
 gridBounds :: (Cell, Cell)
 gridBounds = ((gridMinX, gridMinY), (gridMaxX, gridMaxY))
 
+createMaze :: [[Char]] -> Maze
+createMaze rows =
+  let height = length rows
+      width  = length (head rows)
+      cells  = [ (x,y) | y <- [0..height-1], x <- [0..width-1] ]
+      tileAt (x,y) =
+        case (rows !! y) !! x of
+          '#' -> Wall
+          '.' -> Pellet
+          'o' -> PowerPellet
+          '-' -> Empty
+          'G' -> Gate
+          _   -> Empty
+  in Data.Array.array ((0,0), (width-1, height-1)) [ (c, tileAt c) | c <- cells ]
 
-emptyMazeWithBorder :: Maze
-emptyMazeWithBorder =
-  let cells = [ (x,y) | y <- [gridMinY..gridMaxY], x <- [gridMinX..gridMaxX] ]
-      isBorder (x,y) =
-        x == gridMinX || x == gridMaxX || y == gridMinY || y == gridMaxY
+loadMazeFromFile :: FilePath -> IO Maze
+loadMazeFromFile filepath = do
+  content <- readFile filepath
+  let rows = lines content
+  return (createMaze rows)
 
-      innerWalls =
-        S.fromList ([(x,10) | x <- [3..24]] ++
-                    [(x,20) | x <- [3..24]] ++
-                    [(8,y)  | y <- [12..18]] ++
-                    [(19,y) | y <- [12..18]])
-      tileAt c
-        | isBorder c           = Wall
-        | c `S.member` innerWalls = Wall
-        | otherwise            = Empty
-  in Data.Array.array gridBounds [ (c, tileAt c) | c <- cells ]
+
+
