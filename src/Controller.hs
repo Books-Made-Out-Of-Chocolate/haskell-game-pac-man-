@@ -17,7 +17,7 @@ step secs (Model gState input)
   = -- We show a new random number
     do return
 
-        (Model gState {elapsedTime = 0, pacman = advancePacman (maze gState) (pacman gState)} (processInputKeys input))
+        (Model (handleCollisions (gState {elapsedTime = 0, pacman = advancePacman (maze gState) (pacman gState)})) (processInputKeys input))
   | otherwise
   = -- Just update the elapsed time
     return (Model gState { elapsedTime = elapsedTime gState + secs } input)
@@ -37,6 +37,28 @@ advancePacman maze pacman =
       in if canTurn || canMove
        then pacman { pCell = nextPos, pDir = dir }
        else pacman
+
+removeItem :: Cell -> Maze -> Maze
+removeItem cell maze = maze // [(cell, Empty)]
+
+cellType :: Cell -> Maze  -> Tile
+cellType cell maze = maze ! cell
+
+handleCollisions :: GameState -> GameState
+handleCollisions gState =
+  let pacCell = pCell (pacman gState)
+      curMaze = maze gState
+      curScore = score gState
+      curCellType = cellType pacCell curMaze
+  in case curCellType of
+        Pellet ->
+          gState { maze = removeItem pacCell curMaze,
+                    score = curScore + 10 }
+        PowerPellet ->
+          gState { maze = removeItem pacCell curMaze,
+                    score = curScore + 50 }
+        _ -> gState
+
 
 --ghostStep :: Maze -> StdGen -> Pacman -> Ghost -> (Ghost, StdGen)
 

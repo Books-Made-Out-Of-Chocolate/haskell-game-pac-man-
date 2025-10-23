@@ -176,3 +176,4 @@ loadMazeFromFile filepath = do
   return (createMaze rows)
 
 
+
