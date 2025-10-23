@@ -3,6 +3,7 @@
 module Controller where
 
 import Model
+import View
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
@@ -26,10 +27,17 @@ step secs (Model gState input)
 advancePacman ::  Maze -> Pacman -> Pacman
 advancePacman maze pacman = 
         if inRange gridBounds newCell then
-            if (maze ! newCell) == Wall then pacman else pacman {pCell = newCell}
+            if (maze ! newCell) == Wall then pacman 
+            else pacman {pPos = newPos, 
+                         pCell = worldPosToCell newPos}
         else pacman
       where
         newCell = nextCell (pCell pacman) (pNext pacman)
+        newPos = case pNext pacman of
+                 U -> (\(x, y) -> (x, y - pSpeed pacman)) (pPos pacman)
+                 D -> (\(x, y) -> (x, y + pSpeed pacman)) (pPos pacman)
+                 L -> (\(x, y) -> (x - pSpeed pacman, y)) (pPos pacman)
+                 R -> (\(x, y) -> (x + pSpeed pacman, y)) (pPos pacman)
 --ghostStep :: Maze -> StdGen -> Pacman -> Ghost -> (Ghost, StdGen)
 
 nextCell :: Cell -> Direction -> Cell

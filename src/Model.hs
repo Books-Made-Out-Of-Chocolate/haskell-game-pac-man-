@@ -124,7 +124,7 @@ initialModel = Model
                 (GameState
                       emptyMazeWithBorder
                       (Pellets (S.fromList [(1,1),(1,2),(6,2)]) (S.fromList [(9, 2), (21, 4)]))
-                      (Pacman (1.2, 1.2) (1, 1) U 3.2 U)
+                      (Pacman (200, 10) (20, 1) U 2.5 U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
