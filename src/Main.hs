@@ -7,7 +7,7 @@ import View
 import Graphics.Gloss.Interface.IO.Game
 
 main :: IO ()
-main = playIO (InWindow "Pac-Man" (round screenW, round screenH) (0,0)) -- Or FullScreen
+main = playIO (InWindow "Pac-Man" (round screenX, round screenY) (0,0)) -- Or FullScreen
               black            -- Background color
               10               -- Frames per second
               initialModel     -- Initial state

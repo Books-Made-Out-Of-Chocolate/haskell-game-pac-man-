@@ -25,14 +25,16 @@ step secs (Model gState input)
 
 advancePacman ::  Maze -> Pacman -> Pacman
 advancePacman maze pacman = 
-        if (maze ! newCell) == Wall then pacman else pacman {pCell = newCell}
-          where
-            newCell = nextCell (pCell pacman) (pNext pacman)
+        if inRange gridBounds newCell then
+            if (maze ! newCell) == Wall then pacman else pacman {pCell = newCell}
+        else pacman
+      where
+        newCell = nextCell (pCell pacman) (pNext pacman)
 --ghostStep :: Maze -> StdGen -> Pacman -> Ghost -> (Ghost, StdGen)
 
 nextCell :: Cell -> Direction -> Cell
-nextCell (x, y) U = (x, y + 1)
-nextCell (x, y) D = (x, y - 1)
+nextCell (x, y) U = (x, y - 1)
+nextCell (x, y) D = (x, y + 1)
 nextCell (x, y) L = (x - 1, y)
 nextCell (x, y) R = (x + 1, y)
 

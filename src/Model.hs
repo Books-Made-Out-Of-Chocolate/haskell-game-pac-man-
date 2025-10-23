@@ -117,14 +117,14 @@ data InputControls = InputControls
 
 --random shit
 amountSecondsBetweenStep :: Float
-amountSecondsBetweenStep = 5
+amountSecondsBetweenStep = 1
 
 initialModel :: Model
 initialModel = Model 
                 (GameState
                       emptyMazeWithBorder
-                      (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
-                      (Pacman (1.2, 1.2) (1, 2) U 3.2 U)
+                      (Pellets (S.fromList [(1,1),(1,2),(6,2)]) (S.fromList [(9, 2), (21, 4)]))
+                      (Pacman (1.2, 1.2) (1, 1) U 3.2 U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
@@ -135,8 +135,8 @@ initialModel = Model
                       0
                 )
                 (InputControls 
-                        (PressedControls False False False)
-                        (CharsHighScoreInput ' ' ' ' ' ' ' ')
+                      (PressedControls False False False)
+                      (CharsHighScoreInput ' ' ' ' ' ' ' ')
                 )
 
 --end game data structs
