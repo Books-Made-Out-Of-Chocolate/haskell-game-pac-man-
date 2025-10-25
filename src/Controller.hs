@@ -10,6 +10,7 @@ import Graphics.Gloss.Interface.IO.Game
 import System.Random
 import Data.Set
 import Data.Array
+import Data.Maybe
 
 -- | Handle one iteration of the game
 step :: Float -> Model -> IO Model
@@ -18,26 +19,58 @@ step secs (Model gState input)
   = -- We show a new random number
     do return
 
-        (Model (handleCollisions (gState {elapsedTime = 0, pacman = advancePacman (maze gState) (pacman gState)})) (processInputKeys input))
+        (Model (handleCollisions (gState {elapsedTime = 0, pacman = advancePacman secs (maze gState) (pacman gState)})) (processInputKeys input))
   | otherwise
   = -- Just update the elapsed time
     return (Model gState { elapsedTime = elapsedTime gState + secs } input)
 
 
-advancePacman ::  Maze -> Pacman -> Pacman
-advancePacman maze pacman =
-      let pos = pCell pacman
-          wantDir = pNext pacman
-          curDir = pDir pacman
-          passable cell = (maze ! cell) /= Wall
-          step = nextCell pos
-          canTurn = passable (step wantDir)
-          canMove = passable (step curDir)
-          dir = if canTurn then wantDir else curDir
-          nextPos = nextCell pos dir
-      in if canTurn || canMove
-       then pacman { pCell = nextPos, pDir = dir }
-       else pacman
+advancePacman :: Float ->  Maze -> Pacman -> Pacman
+advancePacman delta maze pacman =
+  let turningCell = nextCellInDirection (pCell pacman) (pNext pacman)
+      targetDir = if isWall turningCell maze then pDir pacman else pNext pacman
+      --add a check to reset direction back to original after a very short time?????????
+      --to create a short window where turn move gets checked and used and not always, think that should be done???
+      nextCell = nextCellInDirection (pCell pacman) targetDir
+  in if not (isWall nextCell maze)
+     then moveInDirection pacman nextCell (pSpeed pacman * delta) targetDir
+     else pacman {pStepsX = 0, pStepsY = 0, pDir = targetDir}
+
+moveInDirection :: Pacman -> Cell -> Float -> Direction -> Pacman
+moveInDirection pacman cell mov dir = case dir of
+  U -> let newpStepsY = pStepsY pacman + mov
+       in if newpStepsY >= tileSize
+          then pacman {pCell = cell,
+                       pStepsY = newpStepsY - tileSize,
+                       pDir = dir}
+          else pacman {pStepsY = newpStepsY, pDir = dir}
+  D -> let newpStepsY = pStepsY pacman - mov
+       in if newpStepsY <= -tileSize
+          then pacman {pCell = cell,
+                       pStepsY = newpStepsY + tileSize,
+                       pDir = dir }
+          else pacman {pStepsY = newpStepsY, pDir = dir }
+  L -> let newpStepsX = pStepsX pacman - mov
+       in if newpStepsX <= -tileSize
+          then pacman {pCell = cell,
+                       pStepsX = newpStepsX + tileSize,
+                       pDir = dir}
+          else pacman {pStepsX = newpStepsX, pDir = dir}
+  R -> let newpStepsX = pStepsX pacman + mov
+       in if newpStepsX >= tileSize
+          then pacman {pCell = cell,
+                       pStepsX = newpStepsX - tileSize,
+                       pDir = dir}
+          else pacman {pStepsX = newpStepsX, pDir = dir}
+
+nextCellInDirection :: Cell -> Direction -> Cell
+nextCellInDirection (x, y) U = (x, y - 1)
+nextCellInDirection (x, y) D = (x, y + 1)
+nextCellInDirection (x, y) L = (x - 1, y)
+nextCellInDirection (x, y) R = (x + 1, y)
+
+isWall :: Cell -> Maze -> Bool
+isWall cell maze = if inRange gridBounds cell then (maze ! cell) == Wall else True
 
 removeItem :: Cell -> Maze -> Maze
 removeItem cell maze = maze // [(cell, Empty)]
@@ -62,12 +95,6 @@ handleCollisions gState =
 
 
 --ghostStep :: Maze -> StdGen -> Pacman -> Ghost -> (Ghost, StdGen)
-
-nextCell :: Cell -> Direction -> Cell
-nextCell (x, y) U = (x, y - 1)
-nextCell (x, y) D = (x, y + 1)
-nextCell (x, y) L = (x - 1, y)
-nextCell (x, y) R = (x + 1, y)
 
 --temp function
 processInputKeys :: InputControls -> InputControls

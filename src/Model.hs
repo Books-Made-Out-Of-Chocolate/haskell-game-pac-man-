@@ -6,6 +6,7 @@ import Data.Set as S
 import Data.Array
 import System.Random
 import Text.ParserCombinators.ReadP (char)
+import GHC.Real (fromIntegral)
 
 --model of program
 data Model = Model
@@ -42,11 +43,13 @@ type Speed = Float
 --actors
 data Pacman = Pacman
   { 
-    pPos   :: WorldPos,
-    pCell  :: Cell,
-    pDir   :: Direction,
-    pSpeed :: Speed,
-    pNext  :: Direction
+    pPos    :: WorldPos,
+    pStepsX :: Float,
+    pStepsY :: Float,
+    pCell   :: Cell,
+    pDir    :: Direction,
+    pSpeed  :: Speed,
+    pNext   :: Direction
   } 
   deriving (Eq, Show)
 
@@ -120,6 +123,9 @@ data InputControls = InputControls
 amountSecondsBetweenStep :: Float
 amountSecondsBetweenStep = 0.1
 
+tileSize :: Float
+tileSize = 10
+
 initialModel :: IO Model
 initialModel = do
   maze <- loadMazeFromFile "src/levels/maze2.txt"
@@ -127,7 +133,7 @@ initialModel = do
             (GameState
                   maze
                   (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
-                  (Pacman (1.2, 1.2) (10,20) U 100 U)
+                  (makePacman (9,19) U (50 * tileSize) U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
@@ -143,6 +149,10 @@ initialModel = do
                 )
 
 --end game data structs
+
+makePacman :: Cell -> Direction -> Speed -> Direction -> Pacman
+makePacman (x, y) = Pacman ((fromIntegral x * tileSize) + (tileSize / 2), 
+                            (fromIntegral y * tileSize) + (tileSize / 2)) 0.0 0.0 (x, y)
 
 
 -- maze constamts
