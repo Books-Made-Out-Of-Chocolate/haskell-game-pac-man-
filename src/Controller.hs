@@ -3,7 +3,6 @@
 module Controller where
 
 import Model
-import View
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
@@ -16,7 +15,7 @@ import Data.Maybe
 step :: Float -> Model -> IO Model
 step secs (Model gState input)
   | elapsedTime gState + secs > amountSecondsBetweenStep
-  = -- We show a new random number
+  =
     do return
 
         (Model (handleCollisions (gState {elapsedTime = 0, pacman = advancePacman secs (maze gState) (pacman gState)})) (processInputKeys input))
@@ -27,14 +26,52 @@ step secs (Model gState input)
 
 advancePacman :: Float ->  Maze -> Pacman -> Pacman
 advancePacman delta maze pacman =
-  let turningCell = nextCellInDirection (pCell pacman) (pNext pacman)
-      targetDir = if isWall turningCell maze then pDir pacman else pNext pacman
+  let 
       --add a check to reset direction back to original after a very short time?????????
       --to create a short window where turn move gets checked and used and not always, think that should be done???
-      nextCell = nextCellInDirection (pCell pacman) targetDir
-  in if not (isWall nextCell maze)
-     then moveInDirection pacman nextCell (pSpeed pacman * delta) targetDir
-     else pacman {pStepsX = 0, pStepsY = 0, pDir = targetDir}
+      movement = pSpeed pacman * delta
+      turningCell = nextCellInDirection (pCell pacman) (pNext pacman)
+
+      centered = if isAtCellCenter pacman movement
+                 then pacman {pStepsX = 0, pStepsY = 0}
+                 else pacman
+
+      startingReverse = isOpposite (pDir centered) (pNext pacman) 
+      atCenter = pStepsX centered == 0 && pStepsY centered == 0 
+      canTurn = startingReverse || (atCenter && not (isWall turningCell maze))
+      targetDir = if canTurn then pNext centered else pDir centered
+
+      stillReversing = (targetDir == U && pStepsY centered > 0) ||
+                       (targetDir == D && pStepsY centered < 0) ||
+                       (targetDir == L && pStepsX centered > 0) ||
+                       (targetDir == R && pStepsX centered < 0)
+
+      isReversing = startingReverse || (pReversing centered && stillReversing)
+
+      snappedPacman = if targetDir /= pDir centered && not startingReverse
+                      then case targetDir of
+                        U -> pacman {pStepsX = 0}
+                        D -> pacman {pStepsX = 0}
+                        L -> pacman {pStepsY = 0}
+                        R -> pacman {pStepsY = 0}
+                      else pacman
+
+      nextCell = nextCellInDirection (pCell snappedPacman) targetDir
+
+  in if not (isWall nextCell maze) || isReversing
+     then moveInDirection (snappedPacman {pReversing = isReversing}) nextCell movement targetDir
+     else pacman {pStepsX = 0, pStepsY = 0, pDir = targetDir, pReversing = False}
+
+isAtCellCenter :: Pacman -> Float -> Bool
+isAtCellCenter pac mov = 
+  abs (pStepsX pac) <= mov && abs (pStepsY pac) <= mov
+
+isOpposite :: Direction -> Direction -> Bool
+isOpposite U D = True
+isOpposite D U = True
+isOpposite L R = True
+isOpposite R L = True
+isOpposite _ _ = False
 
 moveInDirection :: Pacman -> Cell -> Float -> Direction -> Pacman
 moveInDirection pacman cell mov dir = case dir of
@@ -70,7 +107,7 @@ nextCellInDirection (x, y) L = (x - 1, y)
 nextCellInDirection (x, y) R = (x + 1, y)
 
 isWall :: Cell -> Maze -> Bool
-isWall cell maze = if inRange gridBounds cell then (maze ! cell) == Wall else True
+isWall cell maze = not (inRange gridBounds cell) || ((maze ! cell) == Wall)
 
 removeItem :: Cell -> Maze -> Maze
 removeItem cell maze = maze // [(cell, Empty)]

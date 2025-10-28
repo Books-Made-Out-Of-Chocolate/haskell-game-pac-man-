@@ -47,6 +47,7 @@ data Pacman = Pacman
     pStepsX :: Float,
     pStepsY :: Float,
     pCell   :: Cell,
+    pReversing :: Bool,
     pDir    :: Direction,
     pSpeed  :: Speed,
     pNext   :: Direction
@@ -133,7 +134,7 @@ initialModel = do
             (GameState
                   maze
                   (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
-                  (makePacman (9,19) U (50 * tileSize) U)
+                  (makePacman (9,19) U (10 * tileSize) U)
                       [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
                       10
                       12
@@ -152,7 +153,7 @@ initialModel = do
 
 makePacman :: Cell -> Direction -> Speed -> Direction -> Pacman
 makePacman (x, y) = Pacman ((fromIntegral x * tileSize) + (tileSize / 2), 
-                            (fromIntegral y * tileSize) + (tileSize / 2)) 0.0 0.0 (x, y)
+                            (fromIntegral y * tileSize) + (tileSize / 2)) 0.0 0.0 (x, y) False
 
 
 -- maze constamts
