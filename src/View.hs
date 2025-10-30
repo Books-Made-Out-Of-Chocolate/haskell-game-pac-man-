@@ -16,14 +16,14 @@ offsetX = -(screenX / 2) + (tileSize / 2)
 offsetY =  (screenY / 2)  - (tileSize / 2)
 
 cell_To_wPos :: Cell -> WorldPos
-cell_To_wPos (x, y) = 
+cell_To_wPos (x, y) =
       (offsetX + (fromIntegral x * tileSize),
        offsetY - (fromIntegral y * tileSize))
 
 wPos_To_Cell :: WorldPos -> Cell
 wPos_To_Cell (x, y)=
-      (floor((x - offsetX) / tileSize),
-       floor((offsetY - y) / tileSize))
+      (floor ((x - offsetX) / tileSize),
+       floor ((offsetY - y) / tileSize))
 
 -- Just walls for now
 drawTile :: ( (Int,Int), Tile ) -> Picture
@@ -46,33 +46,30 @@ drawTile ((x,y), t) =
 drawMaze :: Maze -> Picture
 drawMaze mz = Pictures (Prelude.map drawTile (Data.Array.assocs mz))
 
-drawDot :: Cell -> Picture
-drawDot cell = let (cx, cy) = cell_To_wPos cell
-                  in translate cx cy $ color (makeColorI 0 255 0 255) (Circle 3)
-
-drawPowerDots :: Cell -> Picture
-drawPowerDots cell = let (cx, cy) = cell_To_wPos cell
-                  in translate cx cy $ color (makeColorI 65 100 0 255) (Circle 5)
-
-drawPellets :: Pellets -> Picture
-drawPellets pellets = Pictures (Prelude.map drawDot (toList (dots pellets)) ++ Prelude.map drawPowerDots (toList (powerDots pellets)))
-
 drawInterpolationPacman :: Pacman -> Picture
 drawInterpolationPacman pac =
   let (cx, cy) = cell_To_wPos (pCell pac)
       (x, y)   = (cx + pStepsX pac, cy + pStepsY pac)
   in translate x y $ color yellow (circleSolid (tileSize / 2))
 
+drawInterpolationGhosts :: [Ghost] -> Picture
+drawInterpolationGhosts ghosts = Pictures ( Prelude.map 
+                                          (\ghost -> let (cx, cy) = cell_To_wPos( gCell ghost)
+                                                         (x, y)   = (cx + gStepsX ghost, cy + gStepsY ghost)
+                                          in translate x y $ color orange (circleSolid (tileSize / 2))) 
+                                          ghosts)
+
 scene :: GameState -> Picture
 scene gs = Pictures
-  [ 
+  [
     color black (rectangleSolid screenX screenY),
     drawMaze (maze gs),
-    drawPellets (pellets gs),
     drawInterpolationPacman (pacman gs),
+    drawInterpolationGhosts (ghosts gs),
     color green (text (show (pStepsX (pacman gs), pStepsY (pacman gs)))),
     translate 0 (-100) $ color green (text (show (pCell (pacman gs)))),
-    translate (-300) (-80) $ color green (text (show (pNext (pacman gs))))
+    translate (-300) (-80) $ color green (text (show (pNext (pacman gs)))),
+    translate (-200) (-180) $ color green (text (show (gameOver gs)))
   ]
 
 view :: Model -> IO Picture

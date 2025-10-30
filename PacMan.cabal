@@ -15,4 +15,5 @@ executable PacMan
   other-modules:       Controller
                      , Model
                      , View
+                     , Movement
   default-language:    Haskell2010

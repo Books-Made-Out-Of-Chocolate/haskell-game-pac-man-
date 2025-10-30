@@ -3,6 +3,7 @@
 module Model where
 
 import Data.Set as S
+import Prelude
 import Data.Array
 import System.Random
 import Text.ParserCombinators.ReadP (char)
@@ -59,11 +60,14 @@ data GhostMode = Chase | Frightened
 
 data Ghost = Ghost
   { 
-    gPos   :: WorldPos,
-    gCell  :: Cell,
-    gDir   :: Direction,
-    gMode  :: GhostMode,
-    gSpeed :: Speed
+    gPos       :: WorldPos,
+    gStepsX    :: Float,
+    gStepsY    :: Float,
+    gCell      :: Cell,
+    gReversing :: Bool,
+    gDir       :: Direction,
+    gMode      :: GhostMode,
+    gSpeed     :: Speed
   } 
   deriving (Eq, Show)
 
@@ -90,6 +94,7 @@ data GameState = GameState
     paused      :: Bool,
     random      :: StdGen, -- Standard random number generator
     ui          :: UIState,
+    gameOver    :: Bool,
     elapsedTime :: Float
   }
  deriving (Eq, Show)                    
@@ -122,27 +127,28 @@ data InputControls = InputControls
 
 --random shit
 amountSecondsBetweenStep :: Float
-amountSecondsBetweenStep = 0.1
+amountSecondsBetweenStep = 0.05
 
 tileSize :: Float
 tileSize = 10
 
 initialModel :: IO Model
 initialModel = do
-  maze <- loadMazeFromFile "src/levels/maze2.txt"
+  (maze, pacman, ghosts) <- loadMazeFromFile "src/levels/maze2.txt"
   return $ Model
             (GameState
                   maze
                   (Pellets (S.fromList [(1,1),(1,2)]) S.empty)
-                  (makePacman (9,19) U (10 * tileSize) U)
-                      [Ghost (1.2, 1.2) (0, 0) U Chase 3.2, Ghost (1.2, 1.2) (0, 0) U Chase 3.2]
-                      10
-                      12
-                      54
-                      False
-                      (mkStdGen 6)
-                      (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
-                      0
+                  pacman
+                  ghosts
+                  10
+                  12
+                  54
+                  False
+                  (mkStdGen 6)
+                  (UIState [("wqe", 23), ("2vwe", 32)] (Just "qqwe"))
+                  False
+                  0
                 )
                 (InputControls
                         (PressedControls False False False)
@@ -153,8 +159,19 @@ initialModel = do
 
 makePacman :: Cell -> Direction -> Speed -> Direction -> Pacman
 makePacman (x, y) = Pacman ((fromIntegral x * tileSize) + (tileSize / 2), 
-                            (fromIntegral y * tileSize) + (tileSize / 2)) 0.0 0.0 (x, y) False
+                            (fromIntegral y * tileSize) + (tileSize / 2)) 
+                            0.0 
+                            0.0 
+                            (x, y) 
+                            False
 
+makeGhost :: Cell -> Direction -> GhostMode -> Speed -> Ghost
+makeGhost (x, y) = Ghost ((fromIntegral x * tileSize) + (tileSize / 2), 
+                          (fromIntegral y * tileSize) + (tileSize / 2)) 
+                          0.0
+                          0.0
+                          (x, y)
+                          False
 
 -- maze constamts
 -- === Maze-constanten ===
@@ -165,26 +182,41 @@ gridMinY = 0; gridMaxY = 35
 gridBounds :: (Cell, Cell)
 gridBounds = ((gridMinX, gridMinY), (gridMaxX, gridMaxY))
 
-createMaze :: [[Char]] -> Maze
+createMaze :: [[Char]] -> (Maze, Pacman, [Ghost])
 createMaze rows =
   let height = length rows
       width  = length (head rows)
       cells  = [ (x,y) | y <- [0..height-1], x <- [0..width-1] ]
-      tileAt (x,y) =
-        case (rows !! y) !! x of
+
+      charAtPosition (x, y) = (rows !! y) !! x 
+
+      tileAt pos =
+        case charAtPosition pos of
           '#' -> Wall
           '.' -> Pellet
           'o' -> PowerPellet
           '-' -> Empty
           'G' -> Gate
+          'p' -> Empty
+          'g' -> Empty
           _   -> Empty
-  in Data.Array.array ((0,0), (width-1, height-1)) [ (c, tileAt c) | c <- cells ]
 
-loadMazeFromFile :: FilePath -> IO Maze
+      pacmanPos = case Prelude.filter (\cell -> charAtPosition cell == 'p') cells of
+                  (pos:_) -> pos
+                  []      -> error "No pacman symbols in input text file"
+
+      ghostPoss = Prelude.filter (\cell -> charAtPosition cell == 'g') cells
+
+      maze = Data.Array.array ((0,0), (width-1, height-1)) [ (c, tileAt c) | c <- cells ]
+
+      pacman = makePacman pacmanPos R (10 * tileSize) R
+
+      ghosts = Prelude.map (\pos -> makeGhost pos U Chase (30 * tileSize)) ghostPoss
+  in 
+    (maze, pacman, ghosts)
+
+loadMazeFromFile :: FilePath -> IO (Maze, Pacman, [Ghost])
 loadMazeFromFile filepath = do
   content <- readFile filepath
   let rows = lines content
   return (createMaze rows)
-
-
-
